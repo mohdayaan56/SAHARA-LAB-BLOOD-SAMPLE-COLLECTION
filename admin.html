@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard – Sahara Lab</title>
+  <meta name="description"
+    content="Sahara Lab admin portal — manage bookings, assign lab boys, enter test results and release reports.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
+  <style>
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-6);
+    }
+
+    @media(max-width:900px) {
+      .stats-bar {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media(max-width:600px) {
+      .stats-bar {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .stat-mini {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-4) var(--sp-5);
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-md);
+    }
+
+    .stat-mini:hover,
+    .stat-mini.active {
+      border-color: var(--primary);
+      background: var(--primary-50);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-mini.active .sm-val {
+      color: var(--primary);
+    }
+
+    .sm-val {
+      font-family: var(--f-heading);
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .sm-lbl {
+      font-size: .75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    /* Report entry table */
+    .re-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .re-table th {
+      background: var(--primary-800);
+      color: #fff;
+      padding: var(--sp-2) var(--sp-3);
+      font-size: .75rem;
+      text-align: left;
+    }
+
+    .re-table td {
+      padding: var(--sp-2) var(--sp-3);
+      border-bottom: 1px solid var(--border);
+      font-size: .83rem;
+      vertical-align: middle;
+    }
+
+    .re-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .re-table input,
+    .re-table select {
+      padding: .28rem .55rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: .82rem;
+      width: 100%;
+      transition: border-color var(--transition);
+    }
+
+    .re-table input:focus,
+    .re-table select:focus {
+      outline: none;
+      border-color: var(--primary-400);
+    }
+
+    .re-test-header {
+      background: var(--primary-50);
+      border-bottom: 1.5px solid var(--primary-100);
+    }
+
+    .re-test-header td {
+      padding: var(--sp-2) var(--sp-3);
+      font-weight: 700;
+      font-size: .82rem;
+      color: var(--primary-700);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ======================================================
+     LOGIN WALL
+     ====================================================== -->
+  <div id="loginWall" class="login-wall">
+    <div class="login-card">
+      <div class="login-logo">🔬</div>
+      <h3 class="font-heading mb-2">Admin / Lab Login</h3>
+      <p class="text-secondary text-sm mb-6">Enter your credentials to access the admin dashboard</p>
+      <div class="form-group">
+        <label for="adminUser"><i class="ri-user-line"></i> Username</label>
+        <input id="adminUser" type="text" class="form-control" placeholder="Enter username">
+      </div>
+      <div class="form-group">
+        <label for="adminPass"><i class="ri-lock-line"></i> Password</label>
+        <input id="adminPass" type="password" class="form-control" placeholder="Enter password"
+          onkeydown="if(event.key==='Enter') doAdminLogin()">
+      </div>
+      <button class="btn btn-primary btn-block btn-lg mt-4" onclick="doAdminLogin()">
+        <i class="ri-login-box-line"></i> Login to Dashboard
+      </button>
+      <div id="adminLoginErr" style="display:none" class="error-msg">Invalid username or password.</div>
+      <div class="login-demo-box mt-4">
+        <strong>Demo Credentials:</strong><br>
+        Username: <strong>admin</strong> &nbsp;|&nbsp; Password: <strong>admin123</strong>
+      </div>
+      <div class="login-divider mt-4"><span>or</span></div>
+      <div class="flex gap-3 justify-center">
+        <a href="index.html" class="btn btn-ghost btn-sm"><i class="ri-home-line"></i> Home</a>
+        <a href="labboy.html" class="btn btn-ghost btn-sm"><i class="ri-user-line"></i> Lab Boy Login</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+     MAIN APP
+     ====================================================== -->
+  <div id="mainApp" class="hidden">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="container">
+        <a href="index.html" class="nav-brand">
+          <div class="nav-logo">SL</div>
+          <div>
+            <div class="nav-name">Sahara <span>Lab</span></div>
+            <div class="nav-tagline">Admin Dashboard</div>
+          </div>
+        </a>
+        <div class="nav-right">
+          <div class="nav-user">
+            <i class="ri-shield-user-line"></i>
+            <span>Dr. Admin</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="doLogout()">
+            <i class="ri-logout-box-line"></i> Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="container">
+        <div>
+          <h1><i class="ri-dashboard-3-line"></i> Lab Management</h1>
+          <p>Manage bookings, assign lab boys, enter test results and release reports</p>
+        </div>
+        <div class="flex gap-3">
+          <button class="btn btn-sm"
+            style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)"
+            onclick="refreshAll()">
+            <i class="ri-refresh-line"></i> Refresh
+          </button>
+          <a href="index.html" class="btn btn-sm" style="background:var(--accent);color:#fff">
+            <i class="ri-add-line"></i> New Booking
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Body -->
+    <div class="dashboard-wrap">
+      <div class="container">
+
+        <!-- Stats Bar -->
+        <div class="stats-bar" id="statsBar"></div>
+
+        <!-- Filter Bar -->
+        <div class="card mb-6" style="padding:var(--sp-4) var(--sp-5)">
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <i class="ri-search-line"></i>
+              <input type="text" class="form-control" id="adminSearch"
+                placeholder="Search patient, phone or Booking ID…" oninput="renderAdminList()">
+            </div>
+            <button class="filter-btn active" id="fb-all" onclick="setFilter('all')">All</button>
+            <button class="filter-btn" id="fb-booked" onclick="setFilter('booked')">Booked</button>
+            <button class="filter-btn" id="fb-assigned" onclick="setFilter('assigned')">Assigned</button>
+            <button class="filter-btn" id="fb-collected" onclick="setFilter('collected')">Collected</button>
+            <button class="filter-btn" id="fb-processing" onclick="setFilter('processing')">Processing</button>
+            <button class="filter-btn" id="fb-ready" onclick="setFilter('ready')">Ready</button>
+          </div>
+        </div>
+
+        <!-- Two-Column Layout -->
+        <div class="dashboard-grid">
+
+          <!-- LEFT: Bookings Table -->
+          <div>
+            <div class="booking-list" id="adminBookingList"></div>
+          </div>
+
+          <!-- RIGHT: Booking Detail -->
+          <div id="adminDetail">
+            <div class="card">
+              <div class="empty-state">
+                <div class="empty-icon">👈</div>
+                <h3>Select a Booking</h3>
+                <p>Click any booking from the left to view details, assign lab boy, or enter report.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+     ASSIGN LAB BOY MODAL
+     ====================================================== -->
+  <div class="modal-overlay" id="assignModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h4><i class="ri-user-add-line"></i> Assign Lab Boy</h4>
+        <button class="modal-close" onclick="SaharaApp.closeModal('assignModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary text-sm mb-4">Select a lab boy to handle this home collection.</p>
+        <div id="labBoyList" class="flex flex-col gap-3"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="SaharaApp.closeModal('assignModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+     REPORT ENTRY MODAL
+     ====================================================== -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal modal-xl">
+      <div class="modal-header">
+        <div>
+          <h4><i class="ri-file-text-line"></i> Enter Test Results</h4>
+          <p class="text-sm text-muted" id="reportModalSub">—</p>
+        </div>
+        <button class="modal-close" onclick="SaharaApp.closeModal('reportModal')">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="alert alert-info mb-4">
+          <i class="ri-information-line"></i>
+          <span>Enter values for each test parameter. Set the flag (Normal / High ↑ / Low ↓) for each result.</span>
+        </div>
+
+        <div id="reportFormContent"></div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:var(--sp-6) 0">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reportedBy"><i class="ri-user-star-line"></i> Reported By</label>
+            <input id="reportedBy" type="text" class="form-control" placeholder="Dr. Name / Lab Technician">
+          </div>
+          <div class="form-group">
+            <label for="reportRemarks"><i class="ri-sticky-note-line"></i> Remarks / Interpretation</label>
+            <textarea id="reportRemarks" class="form-control" rows="2"
+              placeholder="Clinical observations or recommendations…"></textarea>
+          </div>
+        </div>
+
+        <div id="reportError" class="error-msg" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="SaharaApp.closeModal('reportModal')">Cancel</button>
+        <button class="btn btn-warning" onclick="saveReportDraft()">
+          <i class="ri-save-line"></i> Save as Processing
+        </button>
+        <button class="btn btn-success" onclick="saveReportFinal()">
+          <i class="ri-check-double-line"></i> Mark Report Ready
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    SaharaApp.init().then(() => {
+      if (SaharaApp.requireAuth('admin')) {
+        document.getElementById('loginWall').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        refreshAll();
+      }
+    });
+
+    // ============================================================
+    // STATE
+    // ============================================================
+    let currentFilter = 'all';
+    let activeBookingId = null;
+    let reportBookingId = null;
+
+    // ============================================================
+    // LOGIN
+    // ============================================================
+    async function doAdminLogin() {
+      const u = document.getElementById('adminUser').value.trim();
+      const p = document.getElementById('adminPass').value;
+      const user = await SaharaApp.loginAdmin(u, p);
+      if (user) {
+        document.getElementById('loginWall').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        refreshAll();
+      } else {
+        document.getElementById('adminLoginErr').style.display = 'block';
+        setTimeout(() => { document.getElementById('adminLoginErr').style.display = 'none'; }, 3000);
+      }
+    }
+    document.getElementById('adminUser').addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
+
+    function doLogout() {
+      SaharaApp.logout();
+      location.reload();
+    }
+
+    // ============================================================
+    // FILTER
+    // ============================================================
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('fb-' + f).classList.add('active');
+      activeBookingId = null;
+      renderAdminList();
+      renderStats();
+      resetDetail();
+    }
+
+    function setFilterFromStat(f) {
+      setFilter(f);
+    }
+
+    // ============================================================
+    // STATS
+    // ============================================================
+    function renderStats() {
+      const all = SaharaApp.getAllBookings();
+      const counts = {
+        all: all.length,
+        booked: all.filter(b => b.status === 'booked').length,
+        assigned: all.filter(b => b.status === 'assigned').length,
+        collected: all.filter(b => b.status === 'collected').length,
+        processing: all.filter(b => b.status === 'processing').length,
+        ready: all.filter(b => b.status === 'ready').length,
+      };
+      document.getElementById('statsBar').innerHTML = Object.entries(counts).map(([k, v]) => `
+      <div class="stat-mini ${currentFilter === k ? 'active' : ''}" onclick="setFilterFromStat('${k}')">
+        <div class="sm-val">${v}</div>
+        <div class="sm-lbl">${k === 'all' ? 'Total' : SaharaApp.statusLabel(k)}</div>
+      </div>
+    `).join('');
+    }
+
+    // ============================================================
+    // BOOKING LIST
+    // ============================================================
+    function getFilteredAdmin() {
+      let list = SaharaApp.getAllBookings();
+      if (currentFilter !== 'all') list = list.filter(b => b.status === currentFilter);
+      const q = (document.getElementById('adminSearch')?.value || '').toLowerCase();
+      if (q) list = list.filter(b =>
+        b.id.toLowerCase().includes(q) ||
+        b.patient.name.toLowerCase().includes(q) ||
+        b.patient.phone.includes(q)
+      );
+      return list;
+    }
+
+    function renderAdminList() {
+      const list = getFilteredAdmin();
+      const el = document.getElementById('adminBookingList');
+
+      if (!list.length) {
+        el.innerHTML = `<div class="empty-state" style="padding:var(--sp-10) var(--sp-4)">
+        <div class="empty-icon">📭</div>
+        <h3>No bookings</h3>
+        <p>No bookings match the current filter.</p>
+      </div>`;
+        return;
+      }
+
+      el.innerHTML = list.map(b => `
+      <div class="booking-list-card ${b.id === activeBookingId ? 'active' : ''}" onclick="openDetail('${b.id}')">
+        <div class="flex justify-between items-start">
+          <span class="patient-name">${b.patient.name}</span>
+          ${SaharaApp.badgeHtml(b.status)}
+        </div>
+        <span class="booking-id-tag">${b.id}</span>
+        <div class="booking-meta">
+          <i class="ri-calendar-line"></i> ${SaharaApp.fmtDate(b.preferredDate)} · ${SaharaApp.fmtTime(b.preferredTime)}
+        </div>
+        <div class="booking-meta mt-1">
+          <i class="ri-map-pin-line"></i> ${b.patient.address.substring(0, 50)}…
+        </div>
+        ${b.assignedName ? `<div class="booking-meta mt-1"><i class="ri-user-line"></i> ${b.assignedName}</div>` : ''}
+      </div>
+    `).join('');
+    }
+
+    async function refreshAll() {
+      await SaharaApp.refreshBookings();
+      renderStats();
+      renderAdminList();
+      if (activeBookingId) openDetail(activeBookingId);
+    }
+
+    // Auto-sync every 4 seconds
+    setInterval(async () => {
+      if (SaharaApp.getCurrentUser()?.role === 'admin') {
+        await SaharaApp.refreshBookings();
+        renderStats();
+        renderAdminList();
+        if (activeBookingId) openDetail(activeBookingId);
+      }
+    }, 4000);
+
+    function resetDetail() {
+      document.getElementById('adminDetail').innerHTML = `
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-icon">👈</div>
+          <h3>Select a Booking</h3>
+          <p>Click any booking from the left to view details, assign lab boy, or enter report.</p>
+        </div>
+      </div>`;
+    }
+
+    // ============================================================
+    // BOOKING DETAIL
+    // ============================================================
+    function openDetail(id) {
+      activeBookingId = id;
+      renderAdminList();
+
+      const b = SaharaApp.getBooking(id);
+      if (!b) return;
+
+      const testListHtml = (b.tests && b.tests.length)
+        ? b.tests.map(tid => {
+          const t = SaharaApp.getTestById(tid);
+          return t ? `<span class="test-tag"><i class="ri-flask-line"></i>${t.name}</span>` : '';
+        }).join('')
+        : `<span class="text-muted text-sm">No tests entered yet (lab boy will update during collection)</span>`;
+
+      // Action buttons based on status
+      let actionHtml = '';
+      if (b.status === 'booked') {
+        actionHtml = `
+        <button class="btn btn-accent btn-block" onclick="openAssignModal('${id}')">
+          <i class="ri-user-add-line"></i> Assign Lab Boy
+        </button>`;
+      } else if (b.status === 'assigned') {
+        actionHtml = `
+        <div class="flex gap-3">
+          <button class="btn btn-ghost flex-1" onclick="openAssignModal('${id}')">
+            <i class="ri-user-follow-line"></i> Reassign
+          </button>
+          <button class="btn btn-primary flex-1" onclick="changeStatus('${id}','collected')">
+            <i class="ri-test-tube-line"></i> Mark Collected
+          </button>
+        </div>`;
+      } else if (b.status === 'collected') {
+        actionHtml = `
+        <button class="btn btn-warning btn-block btn-lg" onclick="openReportModal('${id}')">
+          <i class="ri-file-text-line"></i> Enter Test Results
+        </button>
+        <p class="text-xs text-center text-muted mt-2">Enter results to release the report to the patient.</p>`;
+      } else if (b.status === 'processing') {
+        actionHtml = `
+        <div class="flex gap-3">
+          <button class="btn btn-ghost flex-1" onclick="openReportModal('${id}')">
+            <i class="ri-edit-line"></i> Edit Results
+          </button>
+          <button class="btn btn-success flex-1" onclick="markReportReady('${id}')">
+            <i class="ri-check-double-line"></i> Mark Ready
+          </button>
+        </div>`;
+      } else if (b.status === 'ready') {
+        actionHtml = `
+        <div class="alert alert-success mb-3" style="margin:0 0 var(--sp-3)">
+          <i class="ri-checkbox-circle-line"></i>
+          <span>Report is live! Patient can view at <strong>report.html</strong></span>
+        </div>
+        <div class="flex gap-3">
+          <a href="report.html?id=${b.id}" target="_blank" class="btn btn-primary flex-1">
+            <i class="ri-external-link-line"></i> View Report
+          </a>
+          <button class="btn btn-ghost flex-1" onclick="openReportModal('${id}')">
+            <i class="ri-edit-line"></i> Edit Report
+          </button>
+        </div>`;
+      }
+
+      // Report preview
+      let reportPreviewHtml = '';
+      if (b.report && b.report.results && b.report.results.length) {
+        const resultRows = b.report.results.map(r => `
+        <tr class="re-test-header"><td colspan="4">${r.testName}</td></tr>
+        ${r.subtests.map(s => `
+          <tr>
+            <td>${s.name}</td>
+            <td class="${s.flag === 'high' ? 'flag-high' : s.flag === 'low' ? 'flag-low' : 'flag-normal'}">
+              ${s.value} ${s.flag === 'high' ? '↑' : s.flag === 'low' ? '↓' : ''}
+            </td>
+            <td class="text-muted">${s.unit}</td>
+            <td class="text-muted">${s.reference}</td>
+          </tr>`).join('')}
+      `).join('');
+
+        reportPreviewHtml = `
+        <div class="detail-section">
+          <div class="detail-section-title"><i class="ri-file-chart-line"></i> Report Preview</div>
+          <div class="table-wrap">
+            <table class="re-table">
+              <thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference</th></tr></thead>
+              <tbody>${resultRows}</tbody>
+            </table>
+          </div>
+          ${b.report.remarks ? `<div class="alert alert-info mt-3" style="margin:var(--sp-3) 0 0"><i class="ri-chat-quote-line"></i><span>${b.report.remarks}</span></div>` : ''}
+          <div class="text-xs text-muted mt-2">Reported by: ${b.report.reportedBy || '—'} · ${SaharaApp.fmtDateTime(b.report.reportedAt)}</div>
+        </div>`;
+      }
+
+      document.getElementById('adminDetail').innerHTML = `
+      <div class="detail-panel">
+
+        <!-- Header -->
+        <div class="detail-section flex justify-between items-center" style="background:linear-gradient(135deg,var(--primary-50),var(--accent-50))">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <h3 style="margin:0">${b.patient.name}</h3>
+              ${SaharaApp.badgeHtml(b.status)}
+            </div>
+            <code style="font-size:.85rem;color:var(--primary-600);font-weight:700">${b.id}</code>
+            <div class="text-xs text-muted mt-1">Booked: ${SaharaApp.fmtDateTime(b.createdAt)}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-muted">Preferred</div>
+            <div class="font-600">${SaharaApp.fmtDate(b.preferredDate)}</div>
+            <div class="font-600 text-primary text-sm">${SaharaApp.fmtTime(b.preferredTime)}</div>
+          </div>
+        </div>
+
+        <!-- Patient -->
+        <div class="detail-section">
+          <div class="detail-section-title"><i class="ri-user-line"></i> Patient Info</div>
+          <div class="detail-grid">
+            <div class="detail-item"><div class="d-label">Phone</div><div class="d-value">${b.patient.phone}</div></div>
+            <div class="detail-item"><div class="d-label">Age / Gender</div><div class="d-value">${b.patient.age || '—'} / ${b.patient.gender || '—'}</div></div>
+            <div class="detail-item" style="grid-column:1/-1">
+              <div class="d-label">Address</div>
+              <div class="d-value"><i class="ri-map-pin-fill" style="color:var(--danger)"></i> ${b.patient.address}</div>
+            </div>
+            ${b.notes ? `<div class="detail-item" style="grid-column:1/-1"><div class="d-label">Notes</div><div class="d-value">${b.notes}</div></div>` : ''}
+          </div>
+        </div>
+
+        <!-- Assignment -->
+        <div class="detail-section">
+          <div class="detail-section-title"><i class="ri-user-received-line"></i> Lab Boy</div>
+          ${b.assignedTo
+          ? `<div class="flex items-center gap-3">
+                <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-50);border:1px solid var(--primary-100);display:flex;align-items:center;justify-content:center;font-size:1.2rem">👤</div>
+                <div><div class="font-600">${b.assignedName}</div><div class="text-xs text-muted">${b.assignedTo}</div></div>
+               </div>`
+          : `<span class="text-muted text-sm"><i class="ri-alert-line" style="color:var(--warning)"></i> Not yet assigned</span>`
+        }
+        </div>
+
+        <!-- Tests -->
+        <div class="detail-section">
+          <div class="detail-section-title"><i class="ri-flask-line"></i> Tests Ordered</div>
+          <div class="flex flex-wrap gap-2">${testListHtml}</div>
+          ${b.collectionNotes ? `<div class="mt-3 text-sm text-secondary"><i class="ri-sticky-note-line"></i> ${b.collectionNotes}</div>` : ''}
+          ${b.collectedAt ? `<div class="text-xs text-muted mt-1">Collected: ${SaharaApp.fmtDateTime(b.collectedAt)}</div>` : ''}
+        </div>
+
+        <!-- Report Preview -->
+        ${reportPreviewHtml}
+
+        <!-- Actions -->
+        <div class="detail-section">${actionHtml}</div>
+
+      </div>
+    `;
+    }
+
+    // ============================================================
+    // STATUS CHANGE
+    // ============================================================
+    async function changeStatus(id, status) {
+      await SaharaApp.updateBooking(id, { status });
+      SaharaApp.showToast(`Status updated to: ${SaharaApp.statusLabel(status)}`, 'success');
+      refreshAll();
+      openDetail(id);
+    }
+
+    async function markReportReady(id) {
+      const b = SaharaApp.getBooking(id);
+      if (!b || !b.report || !b.report.results || !b.report.results.length) {
+        SaharaApp.showToast('Please enter test results first.', 'error');
+        return;
+      }
+      await SaharaApp.saveReport(id, {
+        results:    b.report.results,
+        remarks:    b.report.remarks || '',
+        reportedBy: b.report.reportedBy || 'Dr. Lab Admin',
+      });
+      SaharaApp.showToast('Report marked as READY! Patient can now view it. ✅', 'success');
+      refreshAll();
+      openDetail(id);
+    }
+
+    // ============================================================
+    // ASSIGN LAB BOY
+    // ============================================================
+    async function openAssignModal(id) {
+      assignTargetId = id;
+      const b = SaharaApp.getBooking(id);
+
+      // Show loading state
+      document.getElementById('labBoyList').innerHTML = '<p class="text-muted text-sm" style="padding:var(--sp-4)">Loading lab boys…</p>';
+      SaharaApp.openModal('assignModal');
+
+      const labboys = await SaharaApp.getLabBoys();
+      document.getElementById('labBoyList').innerHTML = labboys.map(lb => `
+      <div class="booking-list-card" onclick="doAssign('${lb.id}','${lb.name}')"
+           style="cursor:pointer">
+        <div class="flex items-center gap-3">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--primary-50);border:1px solid var(--primary-100);display:flex;align-items:center;justify-content:center;font-size:1.3rem">👤</div>
+          <div>
+            <div class="patient-name">${lb.name}</div>
+            <div class="text-xs text-muted">${lb.staffCode} · Field Staff</div>
+          </div>
+          <i class="ri-arrow-right-line ml-auto text-muted"></i>
+        </div>
+      </div>
+    `).join('');
+    }
+
+    async function doAssign(staffId, staffName) {
+      // Get current tests on the booking (may be empty — that's ok for now)
+      const b    = SaharaApp.getBooking(assignTargetId);
+      const testIds = (b && b.tests && b.tests.length) ? b.tests : ['cbc']; // default test if none selected
+      try {
+        await SaharaApp.assignBooking(assignTargetId, staffId, testIds);
+        SaharaApp.closeModal('assignModal');
+        SaharaApp.showToast(`Assigned to ${staffName} successfully! ✅`, 'success');
+        refreshAll();
+        openDetail(assignTargetId);
+      } catch (err) {
+        SaharaApp.showToast('Assignment failed: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    // ============================================================
+    // REPORT ENTRY MODAL
+    // ============================================================
+    function openReportModal(id) {
+      reportBookingId = id;
+      const b = SaharaApp.getBooking(id);
+      if (!b) return;
+
+      document.getElementById('reportModalSub').textContent = `${b.id} · ${b.patient.name}`;
+      document.getElementById('reportedBy').value = b.report?.reportedBy || 'Dr. Lab Admin';
+      document.getElementById('reportRemarks').value = b.report?.remarks || '';
+      document.getElementById('reportError').style.display = 'none';
+
+      // Generate form for each test
+      const tests = b.tests || [];
+      if (!tests.length) {
+        document.getElementById('reportFormContent').innerHTML = `
+        <div class="alert alert-warning">
+          <i class="ri-alert-line"></i>
+          <span>No tests have been added to this booking yet. The lab boy needs to collect the sample and add tests first.</span>
+        </div>`;
+        SaharaApp.openModal('reportModal');
+        return;
+      }
+
+      const formHtml = tests.map(testId => {
+        const test = SaharaApp.getTestById(testId);
+        if (!test) return '';
+        const existing = b.report?.results?.find(r => r.testId === testId);
+
+        return `
+        <div class="report-test-block">
+          <div class="report-test-head">
+            <i class="ri-flask-line" style="color:var(--primary)"></i>
+            <h5>${test.name}</h5>
+            <span class="badge badge-secondary" style="margin-left:auto">${test.category}</span>
+          </div>
+          <table class="re-table">
+            <thead>
+              <tr>
+                <th style="width:35%">Parameter</th>
+                <th style="width:20%">Value</th>
+                <th style="width:15%">Unit</th>
+                <th style="width:20%">Reference</th>
+                <th style="width:10%">Flag</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${test.subTests.map((sub, idx) => {
+          const existSub = existing?.subtests?.[idx];
+          const refRange = SaharaApp.getSubTestRef(sub, b.patient.gender);
+          return `
+                  <tr>
+                    <td><span style="font-weight:500">${sub.name}</span></td>
+                    <td><input type="text" name="${testId}_${idx}_val" value="${existSub?.value || ''}" placeholder="—"></td>
+                    <td style="color:var(--text-muted);font-size:.8rem">${sub.unit}</td>
+                    <td style="color:var(--text-muted);font-size:.78rem">${refRange}</td>
+                    <td>
+                      <select name="${testId}_${idx}_flag">
+                        <option value="normal" ${existSub?.flag === 'normal' || !existSub ? 'selected' : ''}>Normal</option>
+                        <option value="high"   ${existSub?.flag === 'high' ? 'selected' : ''}>High ↑</option>
+                        <option value="low"    ${existSub?.flag === 'low' ? 'selected' : ''}>Low ↓</option>
+                      </select>
+                    </td>
+                  </tr>`;
+        }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }).join('');
+
+      document.getElementById('reportFormContent').innerHTML = formHtml;
+      SaharaApp.openModal('reportModal');
+    }
+
+    function collectReportData() {
+      const b = SaharaApp.getBooking(reportBookingId);
+      const tests = b.tests || [];
+
+      const results = tests.map(testId => {
+        const test = SaharaApp.getTestById(testId);
+        if (!test) return null;
+        const subtests = test.subTests.map((sub, idx) => {
+          const valEl = document.querySelector(`[name="${testId}_${idx}_val"]`);
+          const flagEl = document.querySelector(`[name="${testId}_${idx}_flag"]`);
+          const ref = SaharaApp.getSubTestRef(sub, b.patient.gender);
+          return {
+            name: sub.name,
+            value: valEl ? valEl.value.trim() : '',
+            unit: sub.unit,
+            reference: ref,
+            flag: flagEl ? flagEl.value : 'normal'
+          };
+        });
+        return { testId, testName: test.name, subtests };
+      }).filter(Boolean);
+
+      return results;
+    }
+
+    async function saveReportDraft() {
+      const results    = collectReportData();
+      const remarks    = document.getElementById('reportRemarks').value.trim();
+      const reportedBy = document.getElementById('reportedBy').value.trim() || 'Dr. Lab Admin';
+      try {
+        await SaharaApp.markProcessing(reportBookingId);
+        await SaharaApp.saveReport(reportBookingId, { results, remarks, reportedBy });
+        // Move back to processing since saveReport sets READY
+        await SaharaApp.updateBooking(reportBookingId, { status: 'processing' });
+      } catch {}
+      SaharaApp.closeModal('reportModal');
+      SaharaApp.showToast('Results saved. Status: Processing.', 'info');
+      refreshAll();
+      openDetail(reportBookingId);
+    }
+
+    async function saveReportFinal() {
+      const results = collectReportData();
+      const errEl   = document.getElementById('reportError');
+
+      const hasValues = results.some(r => r.subtests.some(s => s.value !== ''));
+      if (!hasValues) {
+        errEl.textContent = 'Please enter at least one test result value before releasing the report.';
+        errEl.style.display = 'block';
+        return;
+      }
+      errEl.style.display = 'none';
+
+      const remarks    = document.getElementById('reportRemarks').value.trim();
+      const reportedBy = document.getElementById('reportedBy').value.trim() || 'Lab Admin';
+
+      try {
+        await SaharaApp.saveReport(reportBookingId, { results, remarks, reportedBy });
+        SaharaApp.closeModal('reportModal');
+        SaharaApp.showToast('Report is LIVE! Patient can now access it. ✅', 'success');
+        refreshAll();
+        openDetail(reportBookingId);
+      } catch (err) {
+        errEl.textContent = 'Failed to save report: ' + (err.message || 'Server error');
+        errEl.style.display = 'block';
+      }
+    }
+
+  </script>
+</body>
+
+</html>

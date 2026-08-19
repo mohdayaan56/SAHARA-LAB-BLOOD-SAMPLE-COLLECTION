@@ -1,0 +1,124 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// STAFF  (admins + lab boys)
+// ============================================================
+model Staff {
+  id           String    @id @default(cuid())
+  staffCode    String    @unique  // AD001, LB001, etc.
+  name         String
+  role         Role
+  username     String?   @unique  // admin only
+  passwordHash String?            // admin only
+  pin          String?            // labboy only (hashed)
+  phone        String
+
+  bookings     Booking[] @relation("AssignedBookings")
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("staff")
+}
+
+// ============================================================
+// BOOKING
+// ============================================================
+model Booking {
+  id              String        @id   // SHL-DDMM-XXXX
+  status          BookingStatus @default(BOOKED)
+
+  // Patient info
+  patientName     String
+  patientPhone    String
+  patientAddress  String
+  patientAge      String        @default("")
+  patientGender   Gender        @default(UNKNOWN)
+
+  // Preferences
+  preferredDate   String        // stored as "YYYY-MM-DD"
+  preferredTime   String        // stored as "HH:mm"
+  notes           String        @default("")
+
+  // Assignment
+  assignedTo      String?
+  staff           Staff?        @relation("AssignedBookings", fields: [assignedTo], references: [id])
+
+  // Collection
+  collectionNotes String        @default("")
+  collectedAt     DateTime?
+
+  // Relations
+  tests           BookingTest[]
+  report          Report?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("bookings")
+}
+
+// ============================================================
+// BOOKING ↔ TEST  (junction table)
+// ============================================================
+model BookingTest {
+  id        String  @id @default(cuid())
+  bookingId String
+  testId    String  // matches TEST_CATALOGUE id (e.g. "cbc", "lft")
+
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, testId])
+  @@map("booking_tests")
+}
+
+// ============================================================
+// REPORT  (1:1 with Booking)
+// ============================================================
+model Report {
+  id          String   @id @default(cuid())
+  bookingId   String   @unique
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  results     Json     // Array of { testId, testName, subtests: [{ name, value, unit, reference, flag }] }
+  remarks     String   @default("")
+  reportedBy  String
+  reportedAt  DateTime @default(now())
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("reports")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+enum Role {
+  ADMIN
+  LABBOY
+}
+
+enum BookingStatus {
+  BOOKED
+  ASSIGNED
+  COLLECTED
+  PROCESSING
+  READY
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  UNKNOWN
+}

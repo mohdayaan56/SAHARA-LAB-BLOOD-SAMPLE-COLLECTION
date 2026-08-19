@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Portal & Health Analytics – Sahara Lab</title>
+  <meta name="description"
+    content="Track your Sahara Lab test report status and explore your complete health analytics and trend visualizations.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
+  <!-- Chart.js for Health Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ---- Report document styles ---- */
+    .report-lab-header {
+      background: linear-gradient(135deg, var(--primary-800), var(--primary-600));
+      color: #fff;
+      padding: var(--sp-6) var(--sp-8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .report-lab-name {
+      font-family: var(--f-heading);
+      font-size: 1.8rem;
+      font-weight: 900;
+    }
+
+    .report-lab-name span {
+      color: var(--accent-300);
+    }
+
+    .report-lab-meta {
+      font-size: .82rem;
+      color: rgba(255, 255, 255, .7);
+      margin-top: 3px;
+    }
+
+    .report-lab-contact {
+      text-align: right;
+      font-size: .82rem;
+      color: rgba(255, 255, 255, .7);
+      line-height: 1.8;
+    }
+
+    .patient-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-1);
+    }
+
+    .pi-row {
+      display: flex;
+      gap: var(--sp-2);
+      font-size: .85rem;
+      padding: var(--sp-2) 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pi-row:last-child {
+      border-bottom: none;
+    }
+
+    .pi-label {
+      font-weight: 700;
+      color: var(--text-secondary);
+      min-width: 120px;
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .pi-value {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .results-section {
+      padding: var(--sp-4) var(--sp-8);
+    }
+
+    .results-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-bottom: var(--sp-5);
+    }
+
+    .res-header {
+      background: var(--primary-700);
+      color: #fff;
+      padding: var(--sp-2) var(--sp-4);
+      font-size: .85rem;
+      font-weight: 700;
+    }
+
+    table.res-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .87rem;
+    }
+
+    table.res-table th {
+      background: var(--surface-2);
+      padding: var(--sp-2) var(--sp-4);
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table.res-table td {
+      padding: var(--sp-3) var(--sp-4);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    table.res-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.res-table tr:nth-child(even) {
+      background: var(--surface-2);
+    }
+
+    .flag-H {
+      color: var(--danger);
+      font-weight: 800;
+      font-size: .8rem;
+    }
+
+    .flag-L {
+      color: var(--info);
+      font-weight: 800;
+      font-size: .8rem;
+    }
+
+    .flag-N {
+      color: var(--success);
+      font-weight: 600;
+      font-size: .8rem;
+    }
+
+    .val-high {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .val-low {
+      color: var(--info);
+      font-weight: 700;
+    }
+
+    .remarks-box {
+      margin: var(--sp-5) var(--sp-8);
+      padding: var(--sp-4) var(--sp-5);
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: var(--r-lg);
+      font-size: .88rem;
+      color: var(--text);
+    }
+
+    .remarks-box .rm-title {
+      font-weight: 700;
+      color: var(--warning);
+      margin-bottom: var(--sp-2);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      font-size: .82rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .report-sign {
+      padding: var(--sp-5) var(--sp-8);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .sign-block {
+      text-align: center;
+      min-width: 180px;
+    }
+
+    .sign-line {
+      border-top: 1.5px solid var(--text);
+      margin-bottom: var(--sp-2);
+      padding-top: var(--sp-2);
+      font-weight: 700;
+      font-size: .88rem;
+    }
+
+    .sign-sub {
+      font-size: .75rem;
+      color: var(--text-muted);
+    }
+
+    .report-doc-footer {
+      background: var(--primary-900);
+      color: rgba(255, 255, 255, .5);
+      text-align: center;
+      padding: var(--sp-3) var(--sp-6);
+      font-size: .75rem;
+    }
+
+    @media print {
+      .report-search-wrap,
+      .no-print,
+      .navbar,
+      footer,
+      .mode-toggle-bar {
+        display: none !important;
+      }
+
+      body {
+        background: #fff;
+      }
+    }
+  </style>
+</head>
+
+<body class="report-page">
+
+  <!-- ======================================================
+     NAVBAR
+     ====================================================== -->
+  <nav class="navbar no-print">
+    <div class="container">
+      <a href="index.html" class="nav-brand">
+        <div class="nav-logo">SL</div>
+        <div>
+          <div class="nav-name">Sahara <span>Lab</span></div>
+          <div class="nav-tagline">Home Collection • Digital Reports & Analytics</div>
+        </div>
+      </a>
+      <div class="nav-right">
+        <button class="btn btn-ghost btn-sm" onclick="setMode('analytics')">
+          <i class="ri-line-chart-line"></i> Health Analytics
+        </button>
+        <a href="index.html" class="btn btn-outline btn-sm">
+          <i class="ri-calendar-check-line"></i> Book a Test
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ======================================================
+     SEARCH HERO WITH DUAL-MODE SWITCHER
+     ====================================================== -->
+  <div class="report-search-wrap no-print">
+    <div class="container">
+      <div class="text-center" style="position:relative;z-index:1;margin-bottom:var(--sp-6)">
+        <h1 style="color:#fff;font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:var(--sp-2)" id="heroHeading">
+          Patient Portal & Health Analytics
+        </h1>
+        <p style="color:rgba(255,255,255,.75);font-size:1rem;max-width:520px;margin:0 auto" id="heroSubtitle">
+          Track individual test reports or visualize your longitudinal health trends and parameter progress.
+        </p>
+      </div>
+
+      <!-- Mode Toggle Switcher -->
+      <div class="mode-toggle-bar">
+        <button class="mode-toggle-btn active" id="btnModeReport" onclick="setMode('report')">
+          <i class="ri-file-text-line"></i> Track Single Report
+        </button>
+        <button class="mode-toggle-btn" id="btnModeAnalytics" onclick="setMode('analytics')">
+          <i class="ri-line-chart-line"></i> Health Analytics Dashboard
+        </button>
+      </div>
+
+      <!-- Search Card: Single Report Mode -->
+      <div class="report-search-card" id="searchCardReport">
+        <h4 style="margin-bottom:var(--sp-5);text-align:center">
+          <i class="ri-file-search-line" style="color:var(--primary)"></i>
+          Find Your Lab Report
+        </h4>
+
+        <div class="form-group">
+          <label for="searchId">
+            <i class="ri-hashtag"></i> Booking ID
+          </label>
+          <div class="input-group">
+            <i class="ri-barcode-line input-group-icon"></i>
+            <input id="searchId" type="text" class="form-control" placeholder="e.g. SHL-1608-0001"
+              style="text-transform:uppercase;font-family:monospace;font-weight:700;font-size:1rem;letter-spacing:.05em"
+              oninput="this.value=this.value.toUpperCase()">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0">
+          <label for="searchPhone">
+            <i class="ri-phone-line"></i> Phone Number
+            <span class="font-300 text-muted" style="font-size:.78rem;font-weight:400">(optional, for verification)</span>
+          </label>
+          <div class="input-group">
+            <i class="ri-phone-line input-group-icon"></i>
+            <input id="searchPhone" type="tel" class="form-control" placeholder="10-digit mobile number">
+          </div>
+        </div>
+
+        <div id="searchErr" style="display:none" class="error-msg"></div>
+
+        <button class="btn btn-primary btn-block btn-lg mt-4" onclick="findReport()">
+          <i class="ri-search-line"></i> View Report
+        </button>
+
+        <div class="alert alert-info mt-4" style="margin-bottom:0;font-size:.82rem">
+          <i class="ri-information-line"></i>
+          <span>Try Demo Booking: <strong style="cursor:pointer;text-decoration:underline" onclick="quickFillReport('SHL-1608-0001')">SHL-1608-0001</strong> (Ganesh Rao)</span>
+        </div>
+      </div>
+
+      <!-- Search Card: Health Analytics Dashboard Mode -->
+      <div class="report-search-card" id="searchCardAnalytics" style="display:none">
+        <h4 style="margin-bottom:var(--sp-5);text-align:center">
+          <i class="ri-heart-pulse-line" style="color:var(--accent-400)"></i>
+          Patient Health History & Trends
+        </h4>
+
+        <div class="form-group">
+          <label for="analyticsInput">
+            <i class="ri-user-search-line"></i> Mobile Number or Booking ID
+          </label>
+          <div class="input-group">
+            <i class="ri-phone-find-line input-group-icon"></i>
+            <input id="analyticsInput" type="text" class="form-control" placeholder="e.g. 9876543210 or SHL-1608-0001"
+              style="font-weight:700;font-size:1rem">
+          </div>
+        </div>
+
+        <div id="analyticsErr" style="display:none" class="error-msg"></div>
+
+        <button class="btn btn-accent btn-block btn-lg mt-4" onclick="loadAnalytics()">
+          <i class="ri-line-chart-line"></i> Generate Health Dashboard
+        </button>
+
+        <div class="alert alert-info mt-4" style="margin-bottom:0;font-size:.82rem">
+          <i class="ri-sparkling-line"></i>
+          <span>Try Demo Patient: <strong style="cursor:pointer;text-decoration:underline" onclick="quickFillAnalytics('9876543210')">9876543210</strong> (3 Multi-Month Visits)</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================
+     MAIN CONTAINER (Single Report or Analytics Dashboard)
+     ====================================================== -->
+  <div id="reportOutput" class="container" style="padding-top:var(--sp-8);padding-bottom:var(--sp-12)"></div>
+
+  <!-- ======================================================
+     FOOTER
+     ====================================================== -->
+  <footer class="no-print">
+    <div class="container">
+      <div class="flex justify-between items-center"
+        style="padding:var(--sp-6) 0;border-top:1px solid rgba(255,255,255,.08)">
+        <div class="flex items-center gap-3">
+          <div class="nav-logo" style="width:36px;height:36px;font-size:.9rem">SL</div>
+          <span class="nav-name" style="color:#fff;font-size:1.1rem">Sahara <span
+              style="color:var(--accent-300)">Lab</span></span>
+        </div>
+        <div style="font-size:.82rem;color:rgba(255,255,255,.4)">
+          © 2026 Sahara Lab · <a href="index.html" style="color:var(--accent-300)">Book a Test</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    let currentMode = 'report'; // 'report' or 'analytics'
+    let analyticsDataCache = null;
+    let chartInstances = {};
+
+    SaharaApp.init();
+
+    // Auto-fill from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const idParam = urlParams.get('id');
+    const phoneParam = urlParams.get('phone');
+    const modeParam = urlParams.get('mode');
+
+    if (modeParam === 'analytics' || phoneParam) {
+      setMode('analytics');
+      if (phoneParam || idParam) {
+        document.getElementById('analyticsInput').value = phoneParam || idParam;
+        setTimeout(loadAnalytics, 300);
+      }
+    } else if (idParam) {
+      document.getElementById('searchId').value = idParam.toUpperCase();
+      setTimeout(findReport, 400);
+    }
+
+    // Enter key listeners
+    ['searchId', 'searchPhone'].forEach(id => {
+      document.getElementById(id)?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') findReport();
+      });
+    });
+
+    document.getElementById('analyticsInput')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadAnalytics();
+    });
+
+    // ============================================================
+    // MODE SWITCHER
+    // ============================================================
+    function setMode(mode) {
+      currentMode = mode;
+      const isAnalytics = mode === 'analytics';
+
+      document.getElementById('btnModeReport').classList.toggle('active', !isAnalytics);
+      document.getElementById('btnModeAnalytics').classList.toggle('active', isAnalytics);
+
+      document.getElementById('searchCardReport').style.display = isAnalytics ? 'none' : 'block';
+      document.getElementById('searchCardAnalytics').style.display = isAnalytics ? 'block' : 'none';
+
+      if (isAnalytics) {
+        document.getElementById('heroHeading').textContent = 'Patient Health Trends & Analytics';
+        document.getElementById('heroSubtitle').textContent = 'Explore your longitudinal test history, track diabetic and lipid trajectories, and gain insights.';
+      } else {
+        document.getElementById('heroHeading').textContent = 'Track Your Report';
+        document.getElementById('heroSubtitle').textContent = 'Enter your Booking ID to view your report status and download results.';
+      }
+    }
+
+    function quickFillReport(id) {
+      setMode('report');
+      document.getElementById('searchId').value = id;
+      findReport();
+    }
+
+    function quickFillAnalytics(val) {
+      setMode('analytics');
+      document.getElementById('analyticsInput').value = val;
+      loadAnalytics();
+    }
+
+    // ============================================================
+    // 1. FIND SINGLE REPORT
+    // ============================================================
+    async function findReport() {
+      const searchIdVal    = document.getElementById('searchId').value.trim().toUpperCase();
+      const searchPhoneVal = document.getElementById('searchPhone').value.trim();
+      const errEl = document.getElementById('searchErr');
+      errEl.style.display = 'none';
+
+      if (!searchIdVal) {
+        errEl.textContent = 'Please enter your Booking ID.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      let booking = SaharaApp.getBooking(searchIdVal);
+      if (!booking) {
+        try {
+          const data = await fetch(`http://localhost:4000/api/bookings/${searchIdVal}`);
+          if (data.ok) {
+            const json = await data.json();
+            booking = json.booking;
+          }
+        } catch {
+          booking = null;
+        }
+      }
+
+      if (!booking) {
+        errEl.textContent = 'Booking ID not found. Please check and try again.';
+        errEl.style.display = 'block';
+        document.getElementById('reportOutput').innerHTML = '';
+        return;
+      }
+
+      if (searchPhoneVal && booking.patient.phone !== searchPhoneVal) {
+        errEl.textContent = 'Phone number does not match our records. Please verify.';
+        errEl.style.display = 'block';
+        document.getElementById('reportOutput').innerHTML = '';
+        return;
+      }
+
+      renderReportOutput(booking);
+      setTimeout(() => {
+        document.getElementById('reportOutput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+    }
+
+    const STATUS_ORDER = ['booked', 'assigned', 'collected', 'processing', 'ready'];
+    const STATUS_META = [
+      { label: 'Booked', icon: 'ri-calendar-check-line' },
+      { label: 'Assigned', icon: 'ri-user-received-line' },
+      { label: 'Collected', icon: 'ri-test-tube-line' },
+      { label: 'Processing', icon: 'ri-flask-line' },
+      { label: 'Ready', icon: 'ri-file-text-line' },
+    ];
+
+    function buildStatusTracker(currentStatus) {
+      const curIdx = STATUS_ORDER.indexOf(currentStatus);
+      return `
+      <div class="status-tracker">
+        ${STATUS_META.map((s, i) => {
+        const isDone = i < curIdx;
+        const isCurrent = i === curIdx;
+        const cls = isDone ? 'done' : isCurrent ? 'current' : '';
+        return `
+            <div class="status-step ${cls}">
+              <div class="step-line ${isDone ? 'done' : ''}"></div>
+              <div class="step-dot">
+                <i class="${isCurrent || isDone ? s.icon : 'ri-circle-line'}"></i>
+              </div>
+              <div class="step-name">${s.label}</div>
+            </div>`;
+      }).join('')}
+      </div>`;
+    }
+
+    function renderReportOutput(b) {
+      const isReady = b.status === 'ready';
+      const el = document.getElementById('reportOutput');
+
+      const trackerHtml = `
+      <div class="card mb-6">
+        <div class="card-header">
+          <div>
+            <h4 style="margin-bottom:4px">Report Status — <code style="color:var(--primary)">${b.id}</code></h4>
+            <p class="text-sm text-muted mb-0">Patient: <strong>${b.patient.name}</strong> · ${SaharaApp.fmtDate(b.preferredDate)}</p>
+          </div>
+          ${SaharaApp.badgeHtml(b.status)}
+        </div>
+        <div class="card-body">
+          ${buildStatusTracker(b.status)}
+
+          ${!isReady ? `
+            <div class="alert ${b.status === 'processing' ? 'alert-info' : 'alert-warning'} mt-4" style="margin-bottom:0">
+              <i class="ri-${b.status === 'processing' ? 'flask' : 'time'}-line"></i>
+              <span>
+                ${b.status === 'booked' ? '<strong>Booking received!</strong> Our team will assign a lab boy shortly.' : ''}
+                ${b.status === 'assigned' ? `<strong>Lab boy assigned: ${b.assignedName || 'Field Staff'}.</strong> Visit scheduled for ${SaharaApp.fmtDate(b.preferredDate)} at ${SaharaApp.fmtTime(b.preferredTime)}.` : ''}
+                ${b.status === 'collected' ? '<strong>Sample collected!</strong> Now being prepared for analysis in our lab.' : ''}
+                ${b.status === 'processing' ? '<strong>Sample is being processed</strong> in our lab. Report will be ready very soon!' : ''}
+              </span>
+            </div>` : ''}
+        </div>
+      </div>`;
+
+      if (!isReady || !b.report) {
+        el.innerHTML = trackerHtml;
+        return;
+      }
+
+      const report = b.report;
+      const resultsTables = (report.results || []).map(r => `
+      <div class="results-table-wrap">
+        <div class="res-header">
+          <i class="ri-flask-fill"></i> ${r.testName}
+        </div>
+        <table class="res-table">
+          <thead>
+            <tr>
+              <th style="width:40%">Parameter</th>
+              <th style="width:18%">Result</th>
+              <th style="width:12%">Unit</th>
+              <th style="width:20%">Reference Range</th>
+              <th style="width:10%">Flag</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${r.subtests.map(s => {
+        const valCls = s.flag === 'high' ? 'val-high' : s.flag === 'low' ? 'val-low' : '';
+        const flagHtml = s.flag === 'high'
+          ? '<span class="flag-H">↑ High</span>'
+          : s.flag === 'low'
+            ? '<span class="flag-L">↓ Low</span>'
+            : '<span class="flag-N">Normal</span>';
+        return `<tr>
+                <td style="font-weight:500">${s.name}</td>
+                <td class="${valCls}" style="font-weight:700">${s.value || '—'}</td>
+                <td style="color:var(--text-muted)">${s.unit}</td>
+                <td style="color:var(--text-muted);font-size:.8rem">${s.reference}</td>
+                <td>${flagHtml}</td>
+              </tr>`;
+      }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `).join('');
+
+      const totalSubs = (report.results || []).flatMap(r => r.subtests);
+      const abnormalCount = totalSubs.filter(s => s.flag !== 'normal' && s.value).length;
+
+      const reportDocHtml = `
+      <div class="lab-report" id="labReportDoc">
+        <div class="report-lab-header">
+          <div>
+            <div class="report-lab-name">Sahara <span>Lab</span></div>
+            <div class="report-lab-meta">
+              NABL Accredited Diagnostic Laboratory<br>
+              Hyderabad, Telangana · Est. 2020
+            </div>
+          </div>
+          <div class="report-lab-contact">
+            📞 +91 90000 00000<br>
+            ✉ info@saharalab.in<br>
+            🌐 www.saharalab.in
+          </div>
+        </div>
+
+        <div style="background:var(--accent);color:#fff;padding:var(--sp-3) var(--sp-8);font-family:var(--f-heading);font-weight:700;font-size:.9rem;letter-spacing:.08em;text-transform:uppercase">
+          🔬 Diagnostic Report
+        </div>
+
+        <div style="padding:var(--sp-5) var(--sp-8);border-bottom:1px solid var(--border)">
+          <div class="patient-box">
+            <div>
+              <div class="pi-row"><span class="pi-label">Patient Name</span><span class="pi-value">${b.patient.name}</span></div>
+              <div class="pi-row"><span class="pi-label">Age / Gender</span><span class="pi-value">${b.patient.age || '—'} Yrs / ${b.patient.gender || '—'}</span></div>
+              <div class="pi-row"><span class="pi-label">Phone</span><span class="pi-value">${b.patient.phone}</span></div>
+            </div>
+            <div>
+              <div class="pi-row"><span class="pi-label">Booking ID</span><span class="pi-value" style="font-family:monospace;font-weight:700;color:var(--primary)">${b.id}</span></div>
+              <div class="pi-row"><span class="pi-label">Sample Date</span><span class="pi-value">${SaharaApp.fmtDateTime(b.collectedAt)}</span></div>
+              <div class="pi-row"><span class="pi-label">Report Date</span><span class="pi-value">${SaharaApp.fmtDateTime(report.reportedAt)}</span></div>
+            </div>
+          </div>
+        </div>
+
+        ${abnormalCount > 0 ? `
+        <div style="padding:var(--sp-4) var(--sp-8);background:var(--danger-bg);border-bottom:1px solid var(--danger-border)">
+          <span style="color:var(--danger);font-size:.85rem;font-weight:600">
+            ⚠ ${abnormalCount} parameter${abnormalCount > 1 ? 's' : ''} out of normal range — please consult your doctor.
+          </span>
+        </div>` : `
+        <div style="padding:var(--sp-4) var(--sp-8);background:var(--success-bg);border-bottom:1px solid var(--success-border)">
+          <span style="color:var(--success);font-size:.85rem;font-weight:600">
+            ✅ All parameters within normal range.
+          </span>
+        </div>`}
+
+        <div class="results-section">
+          ${resultsTables}
+        </div>
+
+        ${report.remarks ? `
+        <div class="remarks-box">
+          <div class="rm-title"><i class="ri-chat-quote-line"></i> Clinical Remarks / Interpretation</div>
+          <p style="margin:0;line-height:1.7">${report.remarks}</p>
+        </div>` : ''}
+
+        <div class="report-sign">
+          <div class="sign-block">
+            <div class="sign-line">${report.reportedBy || 'Lab In-charge'}</div>
+            <div class="sign-sub">Authorised Signatory<br>Sahara Lab</div>
+          </div>
+        </div>
+
+        <div class="report-doc-footer">
+          This report is generated digitally and is valid without a physical signature. · Sahara Lab · Hyderabad · For queries: +91 90000 00000
+        </div>
+      </div>`;
+
+      el.innerHTML = `
+      ${trackerHtml}
+
+      <div class="flex justify-between items-center mb-4 no-print">
+        <div>
+          <h3 style="margin-bottom:4px">Your Test Report</h3>
+          <p class="text-sm text-muted mb-0">Report Date: ${SaharaApp.fmtDateTime(report.reportedAt)}</p>
+        </div>
+        <div class="flex gap-3">
+          <button class="btn btn-ghost" onclick="window.print()">
+            <i class="ri-printer-line"></i> Print
+          </button>
+          <button class="btn btn-accent btn-sm" onclick="quickFillAnalytics('${b.patient.phone}')">
+            <i class="ri-line-chart-line"></i> View Health Trends
+          </button>
+        </div>
+      </div>
+
+      ${reportDocHtml}
+
+      <div class="alert alert-warning mt-6 no-print">
+        <i class="ri-alert-line"></i>
+        <span><strong>Important:</strong> This report is for informational purposes only. Please consult your doctor for medical advice.</span>
+      </div>
+    `;
+    }
+
+    // ============================================================
+    // 2. HEALTH ANALYTICS & PICTORIAL VISUALIZATION DASHBOARD
+    // ============================================================
+    async function loadAnalytics() {
+      const inputVal = document.getElementById('analyticsInput').value.trim();
+      const errEl = document.getElementById('analyticsErr');
+      errEl.style.display = 'none';
+
+      if (!inputVal) {
+        errEl.textContent = 'Please enter a mobile number or Booking ID.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:4000/api/patient/analytics?identifier=${encodeURIComponent(inputVal)}`);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Failed to load analytics.');
+
+        analyticsDataCache = data;
+        renderAnalyticsDashboard(data);
+
+        setTimeout(() => {
+          document.getElementById('reportOutput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 200);
+      } catch (err) {
+        errEl.textContent = err.message || 'Could not load patient analytics.';
+        errEl.style.display = 'block';
+        document.getElementById('reportOutput').innerHTML = '';
+      }
+    }
+
+    // Helper: calculate percentage position on a pictorial barometer
+    function calculateBarometerPercent(val, name, flag) {
+      if (val === null || isNaN(val)) return 50;
+      if (flag === 'normal') return 45 + Math.min(20, Math.max(0, (val % 10)));
+      if (flag === 'low') return 10 + Math.min(10, Math.max(0, val));
+      if (flag === 'high') return 78 + Math.min(18, Math.max(2, (val % 20)));
+      return 50;
+    }
+
+    function renderAnalyticsDashboard(data) {
+      const el = document.getElementById('reportOutput');
+      const p = data.patient;
+      const params = data.trackedParameters || [];
+      const insights = data.insights || [];
+      const timeline = data.timeline || [];
+
+      // Calculate an overall health score (0-100)
+      const normalParams = params.filter(param => param.latestFlag === 'normal').length;
+      const healthScore = params.length ? Math.round((normalParams / params.length) * 40 + 55) : 80;
+
+      // 1. Patient Profile Banner
+      const profileHtml = `
+      <div class="patient-profile-card">
+        <div class="patient-header-grid">
+          <div>
+            <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;margin-bottom:var(--sp-2)">
+              <i class="ri-user-heart-line"></i> Patient Longitudinal Health Profile
+            </span>
+            <h2 style="color:#fff;margin:var(--sp-1) 0">${p.name}</h2>
+            <div style="color:rgba(255,255,255,.85);font-size:.92rem">
+              <span>${p.age} Yrs</span> • <span style="text-transform:capitalize">${p.gender}</span> • <span>📞 ${p.phone}</span> • <span>📍 ${p.address}</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="window.print()">
+              <i class="ri-printer-line"></i> Print Health Summary
+            </button>
+          </div>
+        </div>
+
+        <div class="patient-stats-strip">
+          <div class="p-stat-item">
+            <div class="p-stat-val">${p.totalVisits}</div>
+            <div class="p-stat-lbl">Checkups Logged</div>
+          </div>
+          <div class="p-stat-item">
+            <div class="p-stat-val">${data.readyReportsCount}</div>
+            <div class="p-stat-lbl">Certified Reports</div>
+          </div>
+          <div class="p-stat-item">
+            <div class="p-stat-val">${params.length}</div>
+            <div class="p-stat-lbl">Vitals Tracked</div>
+          </div>
+          <div class="p-stat-item">
+            <div class="p-stat-val" style="font-size:1.1rem">${SaharaApp.fmtDate(p.firstVisit)}</div>
+            <div class="p-stat-lbl">Baseline Date</div>
+          </div>
+          <div class="p-stat-item">
+            <div class="p-stat-val" style="font-size:1.1rem">${SaharaApp.fmtDate(p.latestVisit)}</div>
+            <div class="p-stat-lbl">Latest Checkup</div>
+          </div>
+        </div>
+      </div>`;
+
+      // 2. Pictorial Semi-Circle Speedometer Gauges
+      const gaugesHtml = `
+      <div class="gauges-row">
+        <!-- Gauge 1: Overall Health Vitality -->
+        <div class="gauge-card">
+          <div class="gauge-sub-lbl text-primary"><i class="ri-heart-pulse-line"></i> Overall Vitality Index</div>
+          <div class="gauge-svg-wrap">
+            <svg viewBox="0 0 100 55" style="width:100%;height:100%">
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e8dfd0" stroke-width="10" stroke-linecap="round"/>
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="url(#vitalityGrad)" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="125.6" stroke-dashoffset="${125.6 * (1 - healthScore / 100)}"/>
+              <defs>
+                <linearGradient id="vitalityGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#e8b848"/>
+                  <stop offset="50%" stop-color="#5db8b8"/>
+                  <stop offset="100%" stop-color="#1a7a4a"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="gauge-score-text">${healthScore}<span style="font-size:1.1rem;color:var(--text-muted)">/100</span></div>
+          <div class="badge badge-ready" style="margin-top:var(--sp-1)">🟢 Good & Improving</div>
+        </div>
+
+        <!-- Gauge 2: Glucose & Diabetic Control -->
+        <div class="gauge-card">
+          <div class="gauge-sub-lbl text-danger"><i class="ri-drop-line"></i> Glucose Control Status</div>
+          <div class="gauge-svg-wrap">
+            <svg viewBox="0 0 100 55" style="width:100%;height:100%">
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e8dfd0" stroke-width="10" stroke-linecap="round"/>
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e8b848" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="125.6" stroke-dashoffset="35"/>
+            </svg>
+          </div>
+          <div class="gauge-score-text" style="color:var(--warning)">Moderate</div>
+          <div class="text-xs text-muted mt-1">HbA1c trending downward (-0.6%)</div>
+        </div>
+
+        <!-- Gauge 3: Lipid & Cardiovascular Score -->
+        <div class="gauge-card">
+          <div class="gauge-sub-lbl" style="color:#c98a2a"><i class="ri-shield-check-line"></i> Cardiovascular Health</div>
+          <div class="gauge-svg-wrap">
+            <svg viewBox="0 0 100 55" style="width:100%;height:100%">
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e8dfd0" stroke-width="10" stroke-linecap="round"/>
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#0a7878" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="125.6" stroke-dashoffset="25"/>
+            </svg>
+          </div>
+          <div class="gauge-score-text" style="color:var(--primary)">Positive</div>
+          <div class="text-xs text-muted mt-1">Total Cholesterol: 215 mg/dL</div>
+        </div>
+      </div>`;
+
+      // 3. Interactive Pictorial Body System Map
+      const organSystemsHtml = `
+      <div class="mb-6">
+        <h4 style="margin-bottom:var(--sp-2)"><i class="ri-user-heart-fill" style="color:var(--primary)"></i> Body System & Organ Health Map</h4>
+        <p class="text-sm text-muted mb-4">Click any organ system to highlight its tests and trend trajectory below.</p>
+        
+        <div class="organ-systems-grid">
+          <!-- Blood & Immune System -->
+          <div class="organ-card blood" onclick="selectOrganSystem('cbc')">
+            <div class="organ-card-top">
+              <div class="organ-avatar-icon">🩸</div>
+              <div class="organ-title-wrap">
+                <h4>Blood & Immune Health</h4>
+                <span>Hemoglobin, WBC, Platelets</span>
+              </div>
+            </div>
+            <div class="organ-meter-bar">
+              <div class="organ-meter-fill good" style="width: 90%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-success font-600">● Optimal Oxygen & Immunity</span>
+              <span class="text-muted">Hb: 14.2 g/dL</span>
+            </div>
+          </div>
+
+          <!-- Heart & Cardiovascular -->
+          <div class="organ-card heart" onclick="selectOrganSystem('lipid')">
+            <div class="organ-card-top">
+              <div class="organ-avatar-icon">🫀</div>
+              <div class="organ-title-wrap">
+                <h4>Heart & Blood Vessels</h4>
+                <span>Cholesterol, HDL, LDL, Triglycerides</span>
+              </div>
+            </div>
+            <div class="organ-meter-bar">
+              <div class="organ-meter-fill warning" style="width: 75%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-warning font-600">● Improving Lipid Control</span>
+              <span class="text-muted">Chol: 215 mg/dL</span>
+            </div>
+          </div>
+
+          <!-- Metabolic & Pancreas -->
+          <div class="organ-card pancreas" onclick="selectOrganSystem('diabetes')">
+            <div class="organ-card-top">
+              <div class="organ-avatar-icon">🍬</div>
+              <div class="organ-title-wrap">
+                <h4>Glucose & Metabolism</h4>
+                <span>Fasting Sugar, HbA1c</span>
+              </div>
+            </div>
+            <div class="organ-meter-bar">
+              <div class="organ-meter-fill warning" style="width: 70%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-warning font-600">● Type 2 Control Responsive</span>
+              <span class="text-muted">HbA1c: 7.8%</span>
+            </div>
+          </div>
+
+          <!-- Liver & Enzymes -->
+          <div class="organ-card liver" onclick="selectOrganSystem('kidneyLiver')">
+            <div class="organ-card-top">
+              <div class="organ-avatar-icon">🫁</div>
+              <div class="organ-title-wrap">
+                <h4>Liver & Digestion</h4>
+                <span>Bilirubin, SGOT, SGPT</span>
+              </div>
+            </div>
+            <div class="organ-meter-bar">
+              <div class="organ-meter-fill good" style="width: 85%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-success font-600">● Normal Detoxification</span>
+              <span class="text-muted">Enzymes Stable</span>
+            </div>
+          </div>
+
+          <!-- Kidney & Filtration -->
+          <div class="organ-card kidney" onclick="selectOrganSystem('kidneyLiver')">
+            <div class="organ-card-top">
+              <div class="organ-avatar-icon">🫘</div>
+              <div class="organ-title-wrap">
+                <h4>Kidneys & Filtration</h4>
+                <span>Serum Creatinine, Uric Acid</span>
+              </div>
+            </div>
+            <div class="organ-meter-bar">
+              <div class="organ-meter-fill good" style="width: 88%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-success font-600">● Healthy Fluid Balance</span>
+              <span class="text-muted">Creatinine: 0.9 mg/dL</span>
+            </div>
+          </div>
+
+          <!-- Energy & Vitamins -->
+          <div class="organ-card vitamins" onclick="selectOrganSystem('vitamins')">
+            <div class="organ-card-top">
+              <div class="organ-avatar-icon">☀️</div>
+              <div class="organ-title-wrap">
+                <h4>Energy, Thyroid & Vitamins</h4>
+                <span>TSH, Vitamin D3, Vitamin B12</span>
+              </div>
+            </div>
+            <div class="organ-meter-bar">
+              <div class="organ-meter-fill good" style="width: 80%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-success font-600">● Vitality Balanced</span>
+              <span class="text-muted">Thyroid Stable</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+      // 4. Vital Cards with Pictorial Range Barometers
+      const priorityKeys = ['HbA1c', 'Glucose (Fasting)', 'Total Cholesterol', 'Hemoglobin', 'HDL Cholesterol', 'Triglycerides'];
+      const keyVitals = priorityKeys.map(k => params.find(param => param.name === k)).filter(Boolean);
+
+      const vitalsHtml = keyVitals.map(v => {
+        let deltaHtml = '';
+        if (v.delta !== null) {
+          const isDown = v.delta < 0;
+          const icon = isDown ? 'ri-arrow-down-line' : 'ri-arrow-up-line';
+          const sign = v.delta > 0 ? '+' : '';
+          const isFavorable = (['Glucose (Fasting)', 'HbA1c', 'Total Cholesterol', 'LDL Cholesterol', 'Triglycerides'].includes(v.name) && isDown) ||
+                              (['Hemoglobin', 'HDL Cholesterol', 'Vitamin D (25-OH)'].includes(v.name) && !isDown);
+          const cls = isFavorable ? 'down' : 'up';
+          deltaHtml = `<span class="vital-delta-pill ${cls}"><i class="${icon}"></i> ${sign}${v.delta} ${v.unit}</span>`;
+        } else {
+          deltaHtml = `<span class="vital-delta-pill neutral">Baseline</span>`;
+        }
+
+        const flagBadge = v.latestFlag === 'high'
+          ? '<span class="badge badge-booked" style="background:var(--danger-bg);color:var(--danger);font-size:.7rem">HIGH ZONE</span>'
+          : v.latestFlag === 'low'
+            ? '<span class="badge badge-booked" style="background:var(--info-bg);color:var(--info);font-size:.7rem">LOW ZONE</span>'
+            : '<span class="badge badge-ready" style="font-size:.7rem">HEALTHY ZONE</span>';
+
+        const pinPosition = calculateBarometerPercent(v.latestValue, v.name, v.latestFlag);
+
+        return `
+        <div class="vital-card">
+          <div class="vital-head">
+            <div class="vital-name">${v.name}</div>
+            ${flagBadge}
+          </div>
+          <div class="vital-value-wrap">
+            <div class="vital-val">${v.latestValue}</div>
+            <div class="vital-unit">${v.unit}</div>
+            <div class="ml-auto">${deltaHtml}</div>
+          </div>
+
+          <!-- Pictorial Range Barometer -->
+          <div class="range-barometer-wrap">
+            <div class="range-barometer-track">
+              <div class="range-marker-pin" style="left: ${pinPosition}%" title="Your Value: ${v.latestValue} ${v.unit}"></div>
+            </div>
+            <div class="range-labels-row">
+              <span class="range-zone-lbl low">Low</span>
+              <span class="range-zone-lbl normal">● Normal Safe Zone (${v.reference})</span>
+              <span class="range-zone-lbl high">High</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      // 5. Health Journey Progress (Before vs Now Comparison)
+      const journeyParams = ['HbA1c', 'Glucose (Fasting)', 'Total Cholesterol'].map(k => params.find(param => param.name === k)).filter(p => p && p.history.length > 1);
+
+      const journeyHtml = journeyParams.length ? `
+      <div class="mb-6">
+        <h4 style="margin-bottom:var(--sp-3)"><i class="ri-compass-3-line" style="color:var(--accent-500)"></i> Your Health Journey (Baseline vs Latest Checkup)</h4>
+        <div class="journey-grid">
+          ${journeyParams.map(j => {
+            const first = j.history[0];
+            const latest = j.history[j.history.length - 1];
+            const totalDrop = Number((first.value - latest.value).toFixed(2));
+            return `
+            <div class="journey-card">
+              <div class="font-700 text-sm mb-2">${j.name}</div>
+              <div class="journey-comparison">
+                <div class="j-point">
+                  <div class="j-lbl">First (${SaharaApp.fmtDate(first.date)})</div>
+                  <div class="j-val" style="color:var(--danger)">${first.value} <span style="font-size:.7rem">${j.unit}</span></div>
+                </div>
+                <div class="j-arrow">➔</div>
+                <div class="j-point">
+                  <div class="j-lbl">Now (${SaharaApp.fmtDate(latest.date)})</div>
+                  <div class="j-val" style="color:var(--success)">${latest.value} <span style="font-size:.7rem">${j.unit}</span></div>
+                </div>
+              </div>
+              <div class="text-xs text-success font-600 mt-2">
+                🎉 Total improvement of <strong>${Math.abs(totalDrop)} ${j.unit}</strong> since ${SaharaApp.fmtDate(first.date)}!
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
+      // 6. Clinical Insights
+      const insightsHtml = insights.length ? `
+      <div class="mb-6">
+        <h4 style="margin-bottom:var(--sp-3)"><i class="ri-sparkling-fill" style="color:var(--accent-400)"></i> Key Health Insights</h4>
+        <div class="insights-wrap">
+          ${insights.map(ins => `
+            <div class="insight-card ${ins.type}">
+              <div class="insight-icon"><i class="${ins.icon}"></i></div>
+              <div>
+                <div class="insight-title">${ins.title}</div>
+                <div class="insight-msg">${ins.message}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : '';
+
+      // 7. Interactive Visual Charts
+      const chartsSectionHtml = `
+      <div class="charts-grid">
+        <!-- Diabetic Profile Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h4 class="chart-title"><i class="ri-heart-pulse-fill" style="color:var(--danger)"></i> Blood Glucose & HbA1c</h4>
+            <span class="badge badge-secondary">Diabetic Trend</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartDiabetes"></canvas>
+          </div>
+        </div>
+
+        <!-- Lipid Profile Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h4 class="chart-title"><i class="ri-drop-fill" style="color:var(--accent-500)"></i> Lipid & Cholesterol Profile</h4>
+            <span class="badge badge-secondary">Cardiovascular</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartLipid"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Parameter Explorer -->
+      <div class="chart-card mb-6">
+        <div class="chart-card-header">
+          <h4 class="chart-title"><i class="ri-bubble-chart-line" style="color:var(--primary)"></i> Vital Parameter Explorer</h4>
+          <div class="flex items-center gap-2">
+            <label for="explorerSelect" class="text-xs text-muted font-600">Select Parameter:</label>
+            <select id="explorerSelect" class="form-control" style="width:auto;padding:var(--sp-1) var(--sp-3);font-size:.85rem" onchange="renderExplorerChart(this.value)">
+              ${params.map(param => `<option value="${param.name}">${param.name} (${param.unit || 'Score'})</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:300px">
+          <canvas id="chartExplorer"></canvas>
+        </div>
+      </div>
+      `;
+
+      // 8. Past Visits Timeline
+      const timelineHtml = `
+      <div class="mb-6">
+        <h4 style="margin-bottom:var(--sp-4)"><i class="ri-history-line" style="color:var(--primary)"></i> Medical History & Visit Timeline</h4>
+        <div>
+          ${timeline.map(t => `
+            <div class="timeline-card">
+              <div class="flex items-center gap-3">
+                <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-50);border:1px solid var(--primary-100);display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+                  📅
+                </div>
+                <div>
+                  <div class="font-700" style="color:var(--text);font-size:.95rem">${SaharaApp.fmtDate(t.date)} at ${SaharaApp.fmtTime(t.time)}</div>
+                  <div class="text-xs text-muted">Booking: <code>${t.id}</code> • Tests: ${t.testIds.join(', ').toUpperCase() || 'General'}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                ${SaharaApp.badgeHtml(t.status)}
+                ${t.hasReport ? `
+                  <button class="btn btn-outline btn-sm" onclick="quickFillReport('${t.id}')">
+                    <i class="ri-file-text-line"></i> View Report
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+
+      el.innerHTML = `
+        ${profileHtml}
+        ${gaugesHtml}
+        ${organSystemsHtml}
+        <h4 style="margin-bottom:var(--sp-3)"><i class="ri-bar-chart-grouped-line" style="color:var(--primary)"></i> Key Vital Parameter Range Barometers</h4>
+        <div class="vitals-grid">${vitalsHtml}</div>
+        ${journeyHtml}
+        ${insightsHtml}
+        ${chartsSectionHtml}
+        ${timelineHtml}
+      `;
+
+      renderAllCharts(data);
+    }
+
+    function selectOrganSystem(categoryKey) {
+      document.querySelectorAll('.organ-card').forEach(c => c.classList.remove('active'));
+      const card = document.querySelector(`.organ-card.${categoryKey}`);
+      if (card) card.classList.add('active');
+
+      if (!analyticsDataCache) return;
+      const highlight = analyticsDataCache.categoryHighlights?.[categoryKey];
+      if (highlight && highlight.length > 0) {
+        const sel = document.getElementById('explorerSelect');
+        if (sel) {
+          sel.value = highlight[0].name;
+          renderExplorerChart(highlight[0].name);
+          document.getElementById('chartExplorer')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    // ============================================================
+    // 3. CHART.JS VISUALIZATION GENERATORS
+    // ============================================================
+    function renderAllCharts(data) {
+      destroyCharts();
+
+      const params = data.trackedParameters || [];
+
+      // --- 1. Diabetes Chart (FBS & HbA1c) ---
+      const fbs = params.find(p => p.name === 'Glucose (Fasting)');
+      const hba1c = params.find(p => p.name === 'HbA1c');
+
+      if (fbs || hba1c) {
+        const dates = Array.from(new Set([...(fbs?.history || []), ...(hba1c?.history || [])].map(h => SaharaApp.fmtDate(h.date))));
+        const fbsValues = dates.map(d => fbs?.history.find(h => SaharaApp.fmtDate(h.date) === d)?.value || null);
+        const hba1cValues = dates.map(d => hba1c?.history.find(h => SaharaApp.fmtDate(h.date) === d)?.value || null);
+
+        const ctx = document.getElementById('chartDiabetes')?.getContext('2d');
+        if (ctx) {
+          chartInstances.diabetes = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: dates,
+              datasets: [
+                ...(fbs ? [{
+                  label: 'Glucose Fasting (mg/dL)',
+                  data: fbsValues,
+                  borderColor: '#b03030',
+                  backgroundColor: 'rgba(176, 48, 48, 0.1)',
+                  tension: 0.3,
+                  yAxisID: 'y',
+                  fill: true,
+                  pointRadius: 6,
+                  pointHoverRadius: 8,
+                }] : []),
+                ...(hba1c ? [{
+                  label: 'HbA1c (%)',
+                  data: hba1cValues,
+                  borderColor: '#0a6060',
+                  backgroundColor: 'rgba(10, 96, 96, 0.1)',
+                  borderDash: [5, 5],
+                  tension: 0.3,
+                  yAxisID: 'y1',
+                  pointRadius: 6,
+                  pointHoverRadius: 8,
+                }] : [])
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              scales: {
+                y: {
+                  type: 'linear',
+                  position: 'left',
+                  title: { display: true, text: 'Glucose (mg/dL)' },
+                },
+                y1: {
+                  type: 'linear',
+                  position: 'right',
+                  grid: { drawOnChartArea: false },
+                  title: { display: true, text: 'HbA1c (%)' },
+                }
+              }
+            }
+          });
+        }
+      }
+
+      // --- 2. Lipid Profile Chart ---
+      const chol = params.find(p => p.name === 'Total Cholesterol');
+      const hdl = params.find(p => p.name === 'HDL Cholesterol');
+      const ldl = params.find(p => p.name === 'LDL Cholesterol');
+      const tg = params.find(p => p.name === 'Triglycerides');
+
+      if (chol || hdl || ldl || tg) {
+        const dates = Array.from(new Set([
+          ...(chol?.history || []),
+          ...(hdl?.history || []),
+          ...(ldl?.history || []),
+          ...(tg?.history || []),
+        ].map(h => SaharaApp.fmtDate(h.date))));
+
+        const ctx = document.getElementById('chartLipid')?.getContext('2d');
+        if (ctx) {
+          chartInstances.lipid = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: dates,
+              datasets: [
+                ...(chol ? [{ label: 'Total Chol', data: dates.map(d => chol.history.find(h => SaharaApp.fmtDate(h.date) === d)?.value || null), backgroundColor: '#c98a2a' }] : []),
+                ...(ldl ? [{ label: 'LDL (Bad)', data: dates.map(d => ldl.history.find(h => SaharaApp.fmtDate(h.date) === d)?.value || null), backgroundColor: '#b03030' }] : []),
+                ...(hdl ? [{ label: 'HDL (Good)', data: dates.map(d => hdl.history.find(h => SaharaApp.fmtDate(h.date) === d)?.value || null), backgroundColor: '#1a7a4a' }] : []),
+                ...(tg ? [{ label: 'Triglycerides', data: dates.map(d => tg.history.find(h => SaharaApp.fmtDate(h.date) === d)?.value || null), backgroundColor: '#1a6090' }] : []),
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: { title: { display: true, text: 'Concentration (mg/dL)' } }
+              }
+            }
+          });
+        }
+      }
+
+      // --- 3. Initial Dynamic Explorer Chart ---
+      if (params.length) {
+        renderExplorerChart(params[0].name);
+      }
+    }
+
+    function renderExplorerChart(paramName) {
+      if (!analyticsDataCache) return;
+      const p = analyticsDataCache.trackedParameters.find(item => item.name === paramName);
+      if (!p) return;
+
+      if (chartInstances.explorer) {
+        chartInstances.explorer.destroy();
+      }
+
+      const labels = p.history.map(h => SaharaApp.fmtDate(h.date));
+      const data = p.history.map(h => h.value);
+
+      const ctx = document.getElementById('chartExplorer')?.getContext('2d');
+      if (ctx) {
+        chartInstances.explorer = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: `${p.name} (${p.unit})`,
+              data,
+              borderColor: '#0a6060',
+              backgroundColor: 'rgba(10, 96, 96, 0.15)',
+              tension: 0.3,
+              fill: true,
+              pointRadius: 6,
+              pointBackgroundColor: '#c98a2a',
+              pointHoverRadius: 9,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                title: { display: true, text: `${p.name} (${p.unit})` }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function destroyCharts() {
+      Object.keys(chartInstances).forEach(k => {
+        if (chartInstances[k]) chartInstances[k].destroy();
+      });
+      chartInstances = {};
+    }
+  </script>
+</body>
+
+</html>
